@@ -1,11 +1,18 @@
+#[allow(dead_code)]
 fn joga(jogo: &str) -> u16 {
     let mut total: u16 = 0;
     let turnos = jogo.split_whitespace();
 
     for turno in turnos {
-        let mut chars = turno.chars();
-
-        while let Some(car) = chars.next() {
+        let chars = turno.chars();
+        for car in chars.enumerate() {
+            if car == '-' {
+                continue;
+            }
+            if car == '/' {
+                total += 0;
+                continue;
+            }
             total += car.to_string().parse::<u16>().unwrap();
         }
     }
@@ -35,5 +42,20 @@ mod tests {
     #[test]
     fn uma_jogada_sem_derrubar_nada() {
         assert_eq!(0, joga("--"));
+    }
+
+    #[test]
+    fn duas_jogadas_sem_derrubar_nada() {
+        assert_eq!(0, joga("-- --"));
+    }
+
+    #[test]
+    fn duas_jogadas_primeira_sem_derrubar_nada_segunda_simples() {
+        assert_eq!(5, joga("-- 23"));
+    }
+
+    #[test]
+    fn um_spare_mais_uma_simples() {
+        assert_eq!(17, joga("4/ 23")); // 4 + 6 + 2 + 2 + 3
     }
 }
