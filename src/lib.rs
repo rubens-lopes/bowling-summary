@@ -11,10 +11,10 @@ fn joga(texto_jogo: &str) -> u16 {
                     // acha o número que completa a anterior
                     total += 10 - turno[jogada - 1].to_string().parse::<u16>().unwrap();
                     // soma com o próximo turno
-                    total += jogo.turnos[indice_turno + 1][0]
-                        .to_string()
-                        .parse::<u16>()
-                        .unwrap();
+
+                    if let Some(jogada) = jogo.turnos.get(indice_turno + 1) {
+                        total += jogada[0].to_string().parse::<u16>().unwrap();
+                    }
                 }
                 _ => total += car.to_string().parse::<u16>().unwrap(),
             }
@@ -93,8 +93,18 @@ mod tests {
         assert_eq!(17, joga("4/ 23")); // 4 + 6 + 2 + 2 + 3
     }
 
-    // #[test]
-    // fn um_spare_mais_um_spare() {
-    //     assert_eq!(17, joga("4/ 2/"));
-    // }
+    #[test]
+    fn um_spare_mais_um_spare() {
+        assert_eq!(22, joga("4/ 2/")); // 4 + 6 + 2 + 2 + 8 + ??
+    }
+
+    #[test]
+    fn uma_partida_completa() {
+        assert_eq!(30, joga("12 12 12 12 12 12 12 12 12 12")); 
+    }
+
+    #[test]
+    fn uma_partida_completa_com_spare_no_final() {
+        assert_eq!(42, joga("12 12 12 12 12 12 12 12 12 1/5")); 
+    }
 }
