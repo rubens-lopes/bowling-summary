@@ -1,16 +1,19 @@
 #[allow(dead_code)]
 fn joga(jogo: &str) -> u16 {
     let mut total: u16 = 0;
-    let turnos = jogo.split_whitespace();
-    
-    for turno in turnos {
+    let turnos: Vec<&str> = jogo.split_whitespace().collect();
+
+    for (indice_turno, turno) in turnos.iter().enumerate() {
         let chars: Vec<char> = turno.chars().collect();
-        for (i, car) in chars.enumerate() {
-            if car == '-' {
+        for (i, car) in chars.iter().enumerate() {
+            if *car == '-' {
                 continue;
             }
-            if car == '/' {
-                total += chars[i - 1];
+            if *car == '/' {
+                // acha o número que completa a anterior
+                total += 10 - chars[i - 1].to_string().parse::<u16>().unwrap();
+                // soma com o próximo turno
+                total += turnos[indice_turno + 1][0].to_string().parse::<u16>().unwrap();
                 continue;
             }
             total += car.to_string().parse::<u16>().unwrap();
@@ -18,6 +21,10 @@ fn joga(jogo: &str) -> u16 {
     }
 
     total
+}
+
+struct Jogo {
+    turnos: Vec<char>
 }
 
 #[cfg(test)]
