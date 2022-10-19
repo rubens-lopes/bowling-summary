@@ -1,3 +1,13 @@
+pub trait Numeravel<T> {
+    fn numero(t: &Self) -> u16;
+}
+
+impl Numeravel<&char> for char {
+    fn numero(c: &Self) -> u16 {
+        c.to_string().parse::<u16>().unwrap()
+    }
+}
+
 #[allow(dead_code)]
 fn joga(texto_jogo: &str) -> u16 {
     let mut total: u16 = 0;
@@ -7,21 +17,35 @@ fn joga(texto_jogo: &str) -> u16 {
         for (jogada, car) in turno.iter().enumerate() {
             match *car {
                 '-' => {} // zero
+                'x' => {
+                    // strike
+                    total += 10;
+                    // soma com o próximo turno
+                    if let Some(jogada) = jogo.turnos.get(indice_turno + 1) {
+                        total += jogada[0].to_string().parse::<u16>().unwrap();
+                        if let Some(segunda_jogada) = jogada.get(1) {
+                            total += segunda_jogada.to_string().parse::<u16>().unwrap();
+                        }
+                    }
+                }
                 '/' => {
                     // acha o número que completa a anterior
                     total += 10 - turno[jogada - 1].to_string().parse::<u16>().unwrap();
                     // soma com o próximo turno
-
                     if let Some(jogada) = jogo.turnos.get(indice_turno + 1) {
                         total += jogada[0].to_string().parse::<u16>().unwrap();
                     }
                 }
-                _ => total += car.to_string().parse::<u16>().unwrap(),
+                _ => total += car.numero(),
             }
         }
     }
 
     total
+}
+
+fn parse_jogada(c: &char) -> u16 {
+    c.to_string().parse::<u16>().unwrap()
 }
 
 #[allow(dead_code)]
@@ -100,11 +124,26 @@ mod tests {
 
     #[test]
     fn uma_partida_completa() {
-        assert_eq!(30, joga("12 12 12 12 12 12 12 12 12 12")); 
+        assert_eq!(30, joga("12 12 12 12 12 12 12 12 12 12"));
     }
 
     #[test]
     fn uma_partida_completa_com_spare_no_final() {
-        assert_eq!(42, joga("12 12 12 12 12 12 12 12 12 1/5")); 
+        assert_eq!(42, joga("12 12 12 12 12 12 12 12 12 1/5"));
+    }
+
+    #[test]
+    fn um_strike() {
+        assert_eq!(10, joga("x"));
+    }
+
+    #[test]
+    fn um_strike_e_meia_jogada() {
+        assert_eq!(12, joga("x 1"));
+    }
+
+    #[test]
+    fn um_strike_e_mais_uma_jogada() {
+        assert_eq!(16, joga("x 12"));
     }
 }
