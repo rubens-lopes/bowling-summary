@@ -2,15 +2,15 @@
 fn joga(jogo: &str) -> u16 {
     let mut total: u16 = 0;
     let turnos = jogo.split_whitespace();
-
+    
     for turno in turnos {
-        let chars = turno.chars();
-        for car in chars.enumerate() {
+        let chars: Vec<char> = turno.chars().collect();
+        for (i, car) in chars.enumerate() {
             if car == '-' {
                 continue;
             }
             if car == '/' {
-                total += 0;
+                total += chars[i - 1];
                 continue;
             }
             total += car.to_string().parse::<u16>().unwrap();
