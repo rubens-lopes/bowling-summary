@@ -1,12 +1,12 @@
-pub trait Numeravel<T> {
-    fn numero(t: &Self) -> u16;
-}
+// pub trait Numeravel<T> {
+//     fn numero(t: &Self) -> u16;
+// }
 
-impl Numeravel<&char> for char {
-    fn numero(c: &Self) -> u16 {
-        c.to_string().parse::<u16>().unwrap()
-    }
-}
+// impl Numeravel<&char> for char {
+//     fn numero(c: &Self) -> u16 {
+//         c.to_string().parse::<u16>().unwrap()
+//     }
+// }
 
 #[allow(dead_code)]
 fn joga(texto_jogo: &str) -> u16 {
@@ -22,21 +22,21 @@ fn joga(texto_jogo: &str) -> u16 {
                     total += 10;
                     // soma com o próximo turno
                     if let Some(jogada) = jogo.turnos.get(indice_turno + 1) {
-                        total += jogada[0].to_string().parse::<u16>().unwrap();
+                        total += parse_jogada(&jogada[0]);
                         if let Some(segunda_jogada) = jogada.get(1) {
-                            total += segunda_jogada.to_string().parse::<u16>().unwrap();
+                            total += parse_jogada(&segunda_jogada);
                         }
                     }
                 }
                 '/' => {
                     // acha o número que completa a anterior
-                    total += 10 - turno[jogada - 1].to_string().parse::<u16>().unwrap();
+                    total += 10 - parse_jogada(&turno[jogada - 1]);
                     // soma com o próximo turno
                     if let Some(jogada) = jogo.turnos.get(indice_turno + 1) {
-                        total += jogada[0].to_string().parse::<u16>().unwrap();
+                        total += parse_jogada(&jogada[0]);
                     }
                 }
-                _ => total += car.numero(),
+                _ => total += parse_jogada(car),
             }
         }
     }
@@ -145,5 +145,10 @@ mod tests {
     #[test]
     fn um_strike_e_mais_uma_jogada() {
         assert_eq!(16, joga("x 12"));
+    }
+
+    #[test]
+    fn um_strike_outro_strike_e_mais_uma_jogada() {
+        assert_eq!(37, joga("x x 12")); // 10 + 10 + 1 + 10 + 1 + 2 + 1 + 2 
     }
 }
