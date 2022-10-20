@@ -84,14 +84,14 @@ impl Partida {
         let mut rodada_anterior_foi_strike = false;
         let mut duas_rodadas_atrás_foi_strike = false;
 
-        for rodada in rodadas {
+        for (índice, rodada) in rodadas.iter().enumerate() {
             match rodada {
                 Jogada::Strike => {
-                    pontuação += 10;
+                    if índice < 10 { pontuação += 10 };
                     if rodada_anterior_foi_spare {
                         pontuação += 10
                     }
-                    if rodada_anterior_foi_strike {
+                    if índice < 11  && rodada_anterior_foi_strike {
                         pontuação += 10;
                     }
                     if duas_rodadas_atrás_foi_strike {
@@ -100,7 +100,7 @@ impl Partida {
 
                     rodada_anterior_foi_spare = false;
                     duas_rodadas_atrás_foi_strike = rodada_anterior_foi_strike;
-                    rodada_anterior_foi_strike = true;
+                    rodada_anterior_foi_strike = índice < 10;
                 }
                 Jogada::Spare(primeira, bônus) => {
                     pontuação += 10;
@@ -118,7 +118,8 @@ impl Partida {
                     rodada_anterior_foi_strike = false;
                 }
                 Jogada::Comum(primeira, segunda) => {
-                    pontuação += primeira + segunda.unwrap_or_default();
+                    if índice < 10 { pontuação += primeira + segunda.unwrap_or_default() };
+
                     if rodada_anterior_foi_spare {
                         pontuação += primeira
                     }
@@ -130,7 +131,7 @@ impl Partida {
                     }
 
                     rodada_anterior_foi_spare = false;
-                    rodada_anterior_foi_strike = false;
+                    rodada_anterior_foi_strike = índice > 10;
                 }
             }
         }
@@ -279,8 +280,17 @@ mod testes_partida_calcular_pontuação {
     }
 
     #[test]
-    #[ignore]
     fn uma_partida_completa_apenas_de_strikes() {
         assert_eq!(300, Partida::new("x x x x x x x x x x x x").calcular_pontuação());
+    }
+
+    #[test]
+    fn uma_partida_completa_apenas_de_strikes_terminada_em_jogada_comum() {
+        assert_eq!(295, Partida::new("x x x x x x x x x x x 5").calcular_pontuação());
+    }
+
+    #[test]
+    fn uma_partida_completa_de_strikes_terminada_em_jogadas_comum() {
+        assert_eq!(292, Partida::new("x x x x x x x x x x 7 5").calcular_pontuação());
     }
 }
