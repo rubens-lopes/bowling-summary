@@ -26,8 +26,8 @@ impl Numerável for Option<char> {
 
 #[derive(Debug)]
 enum Jogada {
-    Strike(u16),
-    Spare(u16, Option<u16>, Option<u16>),
+    Strike,
+    Spare(u16, Option<u16>),
     Comum(u16, Option<u16>),
 }
 
@@ -38,10 +38,9 @@ struct Partida {
 impl PartialEq for Jogada {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Strike(l0), Self::Strike(r0)) => l0 == r0,
-            (Self::Spare(l0, l1, l2), Self::Spare(r0, r1, r2)) => l0 == r0 && l1 == r1 && l2 == r2,
+            (Self::Spare(l0, l1), Self::Spare(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Comum(l0, l1), Self::Comum(r0, r1)) => l0 == r0 && l1 == r1,
-            _ => false,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
 }
@@ -55,20 +54,15 @@ impl Partida {
             if rodada.contains("/") {
                 let mut tentativas = rodada.chars();
                 let primeira_tentativa = tentativas.next().to_u16();
-                let segunda_tentativa = if tentativas.next().is_some() {
-                    Some(10 - primeira_tentativa)
-                } else {
-                    None
-                };
+                tentativas.next(); // consome a /
                 let tentativa_bônus = tentativas.next().try_to_u16();
 
                 rodadas.push(Jogada::Spare(
                     primeira_tentativa,
-                    segunda_tentativa,
                     tentativa_bônus,
                 ));
             } else if rodada == "x" {
-                rodadas.push(Jogada::Strike(10))
+                rodadas.push(Jogada::Strike)
             } else {
                 let mut tentativas = rodada.chars();
 
@@ -92,23 +86,23 @@ impl Partida {
 
         for rodada in rodadas {
             match rodada {
-                Jogada::Strike(pontos) => {
-                    pontuação += pontos;
+                Jogada::Strike => {
+                    pontuação += 10;
                     if rodada_anterior_foi_spare {
-                        pontuação += pontos
+                        pontuação += 10
                     }
                     if rodada_anterior_foi_strike {
-                        pontuação += pontos;
+                        pontuação += 10;
                     }
                     if duas_rodadas_atrás_foi_strike {
-                        pontuação += pontos;
+                        pontuação += 10;
                     }
 
                     rodada_anterior_foi_spare = false;
                     duas_rodadas_atrás_foi_strike = rodada_anterior_foi_strike;
                     rodada_anterior_foi_strike = true;
                 }
-                Jogada::Spare(primeira, _, bônus) => {
+                Jogada::Spare(primeira, bônus) => {
                     pontuação += 10;
                     pontuação += bônus.unwrap_or_default();
                     if rodada_anterior_foi_spare {
@@ -169,13 +163,13 @@ mod testes_partida_new {
 
     #[test]
     fn dado_uma_anotação_com_um_strike_cria_uma_partida() {
-        assert_eq!(vec![Jogada::Strike(10)], Partida::new("x").rodadas);
+        assert_eq!(vec![Jogada::Strike], Partida::new("x").rodadas);
     }
 
     #[test]
     fn dado_uma_anotação_com_um_spare_cria_uma_partida() {
         assert_eq!(
-            vec![Jogada::Spare(2, Some(8), None)],
+            vec![Jogada::Spare(2, None)],
             Partida::new("2/").rodadas
         );
     }
@@ -183,7 +177,7 @@ mod testes_partida_new {
     #[test]
     fn dado_uma_anotação_com_um_spare_na_última_rodada_cria_uma_partida() {
         assert_eq!(
-            vec![Jogada::Spare(0, Some(10), Some(5))],
+            vec![Jogada::Spare(0, Some(5))],
             Partida::new("-/5").rodadas
         );
     }
@@ -280,6 +274,7 @@ mod testes_partida_calcular_pontuação {
     }
 
     #[test]
+    // #[ignore]
     fn uma_partida_completa_apenas_de_strikes() {
         assert_eq!(300, Partida::new("x x x x x x x x x x x x").calcular_pontuação());
     }
