@@ -140,7 +140,7 @@ impl Partida {
                         pontuação += primeira + segunda.unwrap_or_default();
                     }
                     if duas_rodadas_atrás_foi_strike {
-                        pontuação += primeira + segunda.unwrap_or_default();
+                        pontuação += primeira;
                     }
 
                     rodada_anterior_foi_spare = false;
@@ -289,7 +289,7 @@ mod testes_partida_calcular_pontuação {
 
     #[test]
     fn um_strike_e_mais_uma_rodada() {
-        assert_eq!(16, Partida::new("x 12").calcular_pontuação());
+        assert_eq!(16, Partida::new("x 12").calcular_pontuação()); // (10 + 1 + 2) + (1 + 2)
     }
 
     #[test]
