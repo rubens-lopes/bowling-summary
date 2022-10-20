@@ -219,12 +219,17 @@ mod testes_partida_calcular_pontuação {
 
     #[test]
     fn um_spare_mais_uma_comum() {
-        assert_eq!(17, Partida::new("4/ 23").calcular_pontuação()); // 4 + 6 + 2 + 2 + 3
+        assert_eq!(17, Partida::new("4/ 23").calcular_pontuação()); // (4 + 6 + 2) + (2 + 3)
     }
 
     #[test]
     fn um_spare_mais_um_spare() {
-        assert_eq!(22, Partida::new("4/ 2/").calcular_pontuação()); // 4 + 6 + 2 + 2 + 8 + ??
+        assert_eq!(22, Partida::new("4/ 2/").calcular_pontuação()); // (4 + 6 + 2) + (2 + 8 + ??)
+    }
+
+    #[test]
+    fn um_spare_mais_uma_rodada_parcial() {
+        assert_eq!(14, Partida::new("4/ 2").calcular_pontuação());
     }
 
     #[test]
@@ -274,7 +279,7 @@ mod testes_partida_calcular_pontuação {
     }
 
     #[test]
-    // #[ignore]
+    #[ignore]
     fn uma_partida_completa_apenas_de_strikes() {
         assert_eq!(300, Partida::new("x x x x x x x x x x x x").calcular_pontuação());
     }
