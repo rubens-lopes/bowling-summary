@@ -294,7 +294,7 @@ mod testes_partida_calcular_pontuação {
 
     #[test]
     fn um_strike_outro_strike_e_mais_uma_rodada() {
-        assert_eq!(39, Partida::new("x x 12").calcular_pontuação()); // (10 + 10 + 3) + (10 + 3 + ??) + (1 + 2)
+        assert_eq!(37, Partida::new("x x 12").calcular_pontuação()); // (10 + 10 + 1) + (10 + 1 + 2) + (1 + 2)
     }
 
     #[test]
@@ -343,6 +343,15 @@ mod testes_partida_calcular_pontuação {
         assert_eq!(
             292,
             Partida::new("x x x x x x x x x x 7 5").calcular_pontuação()
+        );
+    }
+
+    #[test]
+    // #[ignore]
+    fn uma_partida_terminada_em_strike_e_jogadas_comum() {
+        assert_eq!(
+            180,
+            Partida::new("x x x 72 8/ -9 x 7/ 9- x x 8").calcular_pontuação()
         );
     }
 }
