@@ -1,9 +1,9 @@
-trait Numerável {
+trait Numeravel {
     fn to_u16(self) -> u16;
     fn try_to_u16(self) -> Option<u16>;
 }
 
-impl Numerável for Option<char> {
+impl Numeravel for Option<char> {
     fn to_u16(self) -> u16 {
         let carácter = self.unwrap_or_else(|| '0');
 
@@ -35,10 +35,6 @@ enum Jogada {
     Bonus(u16),
 }
 
-struct Partida {
-    rodadas: Vec<Jogada>,
-}
-
 impl PartialEq for Jogada {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -48,6 +44,10 @@ impl PartialEq for Jogada {
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
+}
+
+struct Partida {
+    rodadas: Vec<Jogada>,
 }
 
 impl Partida {
@@ -93,7 +93,7 @@ impl Partida {
 
     #[allow(dead_code)]
     fn calcular_pontuação(&self) -> u16 {
-        let mut pontuacao: u16 = 0;
+        let mut pontuacao = 0u16;
         let Self { rodadas } = self;
         let mut rodada_anterior_foi_spare = false;
         let mut rodada_anterior_foi_strike = false;
@@ -129,7 +129,7 @@ impl Partida {
                     }
 
                     rodada_anterior_foi_spare = true;
-                    duas_rodadas_pra_tras_foi_strike = rodada_anterior_foi_strike;
+                    duas_rodadas_pra_tras_foi_strike = false;
                     rodada_anterior_foi_strike = false;
                 }
                 Jogada::Comum(primeira, segunda) => {
@@ -148,17 +148,17 @@ impl Partida {
                     }
 
                     rodada_anterior_foi_spare = false;
-                    duas_rodadas_pra_tras_foi_strike = rodada_anterior_foi_strike;
+                    duas_rodadas_pra_tras_foi_strike = false;
                     rodada_anterior_foi_strike = false;
                 }
                 Jogada::Bonus(pontos) => {
                     pontuacao += pontos;
 
-                    if rodada_anterior_foi_strike {
+                    if duas_rodadas_pra_tras_foi_strike {
                         pontuacao += pontos
                     }
 
-                    rodada_anterior_foi_strike = false;
+                    duas_rodadas_pra_tras_foi_strike = false;
                 }
             }
         }
@@ -168,203 +168,7 @@ impl Partida {
 }
 
 #[cfg(test)]
-mod testes_partida_new {
-    use super::*;
-
-    #[test]
-    fn dado_uma_anotação_vazia_cria_uma_partida() {
-        assert_eq!(Vec::<Jogada>::new(), Partida::new("").rodadas);
-    }
-
-    #[test]
-    fn dado_uma_anotação_cria_uma_partida() {
-        assert_eq!(
-            vec![Jogada::Comum(3, Some(2)), Jogada::Comum(2, Some(3))],
-            Partida::new("32 23").rodadas
-        );
-    }
-
-    #[test]
-    fn dado_uma_anotação_com_rodada_parcial_cria_uma_partida() {
-        assert_eq!(vec![Jogada::Comum(3, None)], Partida::new("3").rodadas);
-    }
-
-    #[test]
-    fn dado_uma_anotação_com_um_strike_cria_uma_partida() {
-        assert_eq!(vec![Jogada::Strike], Partida::new("x").rodadas);
-    }
-
-    #[test]
-    fn dado_uma_anotação_com_um_spare_cria_uma_partida() {
-        assert_eq!(vec![Jogada::Spare(2, None)], Partida::new("2/").rodadas);
-    }
-
-    #[test]
-    fn dado_uma_anotação_com_um_spare_na_última_rodada_cria_uma_partida() {
-        assert_eq!(vec![Jogada::Spare(0, Some(5))], Partida::new("-/5").rodadas);
-    }
-
-    #[test]
-    fn dado_uma_anotação_com_12_rodadas_cria_uma_partida() {
-        assert_eq!(
-            vec![
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Strike,
-                Jogada::Bonus(10),
-                Jogada::Bonus(5),
-            ],
-            Partida::new("x x x x x x x x x x x 5").rodadas
-        );
-    }
-}
+mod testes_partida_new;
 
 #[cfg(test)]
-mod testes_partida_calcular_pontuação {
-    use super::*;
-
-    #[test]
-    fn começo_partida() {
-        assert_eq!(0, Partida::new("").calcular_pontuação());
-    }
-
-    #[test]
-    fn uma_rodada_sem_derrubar_tudo() {
-        assert_eq!(3, Partida::new("12").calcular_pontuação());
-    }
-
-    #[test]
-    fn duas_rodadas_sem_derrubar_tudo() {
-        assert_eq!(10, Partida::new("32 23").calcular_pontuação());
-    }
-
-    #[test]
-    fn uma_rodada_sem_derrubar_nada() {
-        assert_eq!(0, Partida::new("--").calcular_pontuação());
-    }
-
-    #[test]
-    fn duas_rodadas_sem_derrubar_nada() {
-        assert_eq!(0, Partida::new("-- --").calcular_pontuação());
-    }
-
-    #[test]
-    fn duas_rodadas_primeira_sem_derrubar_nada_segunda_comum() {
-        assert_eq!(5, Partida::new("-- 23").calcular_pontuação());
-    }
-
-    #[test]
-    fn um_spare_mais_uma_comum() {
-        assert_eq!(17, Partida::new("4/ 23").calcular_pontuação()); // (4 + 6 + 2) + (2 + 3)
-    }
-
-    #[test]
-    fn um_spare_mais_um_spare() {
-        assert_eq!(22, Partida::new("4/ 2/").calcular_pontuação()); // (4 + 6 + 2) + (2 + 8 + ??)
-    }
-
-    #[test]
-    fn um_spare_mais_uma_rodada_parcial() {
-        assert_eq!(14, Partida::new("4/ 2").calcular_pontuação());
-    }
-
-    #[test]
-    fn uma_partida_completa() {
-        assert_eq!(
-            30,
-            Partida::new("12 12 12 12 12 12 12 12 12 12").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_completa_com_spare_no_final() {
-        assert_eq!(
-            42,
-            Partida::new("12 12 12 12 12 12 12 12 12 1/5").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn um_strike() {
-        assert_eq!(10, Partida::new("x").calcular_pontuação());
-    }
-
-    #[test]
-    fn um_strike_e_meia_rodada() {
-        assert_eq!(12, Partida::new("x 1").calcular_pontuação());
-    }
-
-    #[test]
-    fn um_strike_e_mais_uma_rodada() {
-        assert_eq!(16, Partida::new("x 12").calcular_pontuação()); // (10 + 1 + 2) + (1 + 2)
-    }
-
-    #[test]
-    fn um_strike_outro_strike_e_mais_uma_rodada() {
-        assert_eq!(37, Partida::new("x x 12").calcular_pontuação()); // (10 + 10 + 1) + (10 + 1 + 2) + (1 + 2)
-    }
-
-    #[test]
-    fn uma_partida_completa_apenas_de_jogadas_comum() {
-        assert_eq!(
-            90,
-            Partida::new("9- 9- 9- 9- 9- 9- 9- 9- 9- 9-").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_completa_apenas_de_spares() {
-        assert_eq!(
-            150,
-            Partida::new("5/ 5/ 5/ 5/ 5/ 5/ 5/ 5/ 5/ 5/5").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_completa_apenas_de_spares_com_bônus_de_10_pinos() {
-        assert_eq!(
-            155,
-            Partida::new("5/ 5/ 5/ 5/ 5/ 5/ 5/ 5/ 5/ 5/x").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_completa_apenas_de_strikes() {
-        assert_eq!(
-            300,
-            Partida::new("x x x x x x x x x x x x").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_completa_apenas_de_strikes_terminada_em_jogada_comum() {
-        assert_eq!(
-            295,
-            Partida::new("x x x x x x x x x x x 5").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_completa_de_strikes_terminada_em_jogadas_comum() {
-        assert_eq!(
-            289,
-            Partida::new("x x x x x x x x x x 7 5").calcular_pontuação()
-        );
-    }
-
-    #[test]
-    fn uma_partida_terminada_em_strike_e_jogadas_comum() {
-        assert_eq!(
-            180,
-            Partida::new("x x x 72 8/ -9 x 7/ 9- x x 8").calcular_pontuação()
-            // 30 + 27 + 19 + 9 + 10 + 9 + 20 + 19 + 9 + 28
-        );
-    }
-}
+mod testes_partida_calcular_pontuacao;
