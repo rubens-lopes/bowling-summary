@@ -92,7 +92,7 @@ impl Partida {
     }
 
     #[allow(dead_code)]
-    fn calcular_pontuação(&self) -> u16 {
+    fn calcular_pontuacao(&self) -> u16 {
         let mut pontuacao = 0u16;
         let Self { rodadas } = self;
         let mut rodada_anterior_foi_spare = false;
