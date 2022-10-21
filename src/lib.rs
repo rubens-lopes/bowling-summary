@@ -32,6 +32,7 @@ enum Jogada {
     Strike,
     Spare(u16, Option<u16>),
     Comum(u16, Option<u16>),
+    Bonus(u16),
 }
 
 struct Partida {
@@ -43,6 +44,7 @@ impl PartialEq for Jogada {
         match (self, other) {
             (Self::Spare(l0, l1), Self::Spare(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Comum(l0, l1), Self::Comum(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Bonus(l0), Self::Bonus(r0)) => l0 == r0,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -50,16 +52,18 @@ impl PartialEq for Jogada {
 
 impl Partida {
     #[allow(dead_code)]
-    fn new(anotações: &str) -> Self {
+    fn new(anotacoes: &str) -> Self {
         let mut rodadas = Vec::new();
-        let mut anotações: Vec<&str> = anotações.split_whitespace().collect();
-        let rodadas_extras = if anotações.len() > 10 {
-            vec![anotações.pop().unwrap(), anotações.pop().unwrap()]
+        let mut anotacoes: Vec<&str> = anotacoes.split_whitespace().collect();
+        let rodadas_bonus = if anotacoes.len() > 10 {
+            let primeiro_bonus = anotacoes.pop().unwrap();
+            let segundo_bonus = anotacoes.pop().unwrap();
+            vec![segundo_bonus, primeiro_bonus]
         } else {
             vec![]
         };
 
-        for rodada in anotações {
+        for rodada in anotacoes {
             if rodada.contains("/") {
                 let mut tentativas = rodada.chars();
                 let primeira_tentativa = tentativas.next().to_u16();
@@ -79,9 +83,9 @@ impl Partida {
             }
         }
 
-        for rodada in rodadas_extras {
+        for rodada in rodadas_bonus {
             let mut tentativas = rodada.chars();
-            rodadas.push(Jogada::Comum(tentativas.next().to_u16(), None));
+            rodadas.push(Jogada::Bonus(tentativas.next().to_u16()));
         }
 
         Partida { rodadas }
@@ -89,67 +93,77 @@ impl Partida {
 
     #[allow(dead_code)]
     fn calcular_pontuação(&self) -> u16 {
-        let mut pontuação: u16 = 0;
+        let mut pontuacao: u16 = 0;
         let Self { rodadas } = self;
         let mut rodada_anterior_foi_spare = false;
         let mut rodada_anterior_foi_strike = false;
-        let mut duas_rodadas_atrás_foi_strike = false;
+        let mut duas_rodadas_pra_tras_foi_strike = false;
 
-        for (índice, rodada) in rodadas.iter().enumerate() {
+        for rodada in rodadas.iter() {
             match rodada {
                 Jogada::Strike => {
-                    pontuação += 10;
-                    if rodada_anterior_foi_spare {
-                        pontuação += 10
+                    pontuacao += 10;
+
+                    if rodada_anterior_foi_spare || rodada_anterior_foi_strike {
+                        pontuacao += 10;
                     }
-                    if rodada_anterior_foi_strike {
-                        pontuação += 10;
-                    }
-                    if duas_rodadas_atrás_foi_strike {
-                        pontuação += 10;
+
+                    if duas_rodadas_pra_tras_foi_strike {
+                        pontuacao += 10;
                     }
 
                     rodada_anterior_foi_spare = false;
-                    duas_rodadas_atrás_foi_strike = rodada_anterior_foi_strike;
+                    duas_rodadas_pra_tras_foi_strike = rodada_anterior_foi_strike;
                     rodada_anterior_foi_strike = true;
                 }
                 Jogada::Spare(primeira, bônus) => {
-                    pontuação += 10;
-                    pontuação += bônus.unwrap_or_default();
-                    if rodada_anterior_foi_spare {
-                        pontuação += primeira
+                    pontuacao += 10;
+                    pontuacao += bônus.unwrap_or_default();
+
+                    if rodada_anterior_foi_spare || duas_rodadas_pra_tras_foi_strike {
+                        pontuacao += primeira;
                     }
+
                     if rodada_anterior_foi_strike {
-                        pontuação += 10;
+                        pontuacao += 10;
                     }
-                    if duas_rodadas_atrás_foi_strike {
-                        pontuação += 10;
-                    }
+
                     rodada_anterior_foi_spare = true;
+                    duas_rodadas_pra_tras_foi_strike = rodada_anterior_foi_strike;
                     rodada_anterior_foi_strike = false;
                 }
                 Jogada::Comum(primeira, segunda) => {
-                    if índice < 10 {
-                        pontuação += primeira + segunda.unwrap_or_default()
-                    };
+                    pontuacao += primeira + segunda.unwrap_or_default();
 
                     if rodada_anterior_foi_spare {
-                        pontuação += primeira
+                        pontuacao += primeira;
                     }
+
                     if rodada_anterior_foi_strike {
-                        pontuação += primeira + segunda.unwrap_or_default();
+                        pontuacao += primeira + segunda.unwrap_or_default();
                     }
-                    if duas_rodadas_atrás_foi_strike {
-                        pontuação += primeira;
+
+                    if duas_rodadas_pra_tras_foi_strike {
+                        pontuacao += primeira
                     }
 
                     rodada_anterior_foi_spare = false;
+                    duas_rodadas_pra_tras_foi_strike = rodada_anterior_foi_strike;
+                    rodada_anterior_foi_strike = false;
+                }
+                Jogada::Bonus(pontos) => {
+                    pontuacao += pontos;
+
+                    if rodada_anterior_foi_strike {
+                        pontuacao += pontos
+                    }
+
                     rodada_anterior_foi_strike = false;
                 }
             }
         }
 
-        pontuação
+        pontuacao
     }
 }
 
@@ -204,10 +218,10 @@ mod testes_partida_new {
                 Jogada::Strike,
                 Jogada::Strike,
                 Jogada::Strike,
-                Jogada::Comum(10, None),
-                Jogada::Comum(10, None),
+                Jogada::Bonus(10),
+                Jogada::Bonus(5),
             ],
-            Partida::new("x x x x x x x x x x x x").rodadas
+            Partida::new("x x x x x x x x x x x 5").rodadas
         );
     }
 }
@@ -338,20 +352,19 @@ mod testes_partida_calcular_pontuação {
     }
 
     #[test]
-    // #[ignore]
     fn uma_partida_completa_de_strikes_terminada_em_jogadas_comum() {
         assert_eq!(
-            292,
+            289,
             Partida::new("x x x x x x x x x x 7 5").calcular_pontuação()
         );
     }
 
     #[test]
-    // #[ignore]
     fn uma_partida_terminada_em_strike_e_jogadas_comum() {
         assert_eq!(
             180,
             Partida::new("x x x 72 8/ -9 x 7/ 9- x x 8").calcular_pontuação()
+            // 30 + 27 + 19 + 9 + 10 + 9 + 20 + 19 + 9 + 28
         );
     }
 }
